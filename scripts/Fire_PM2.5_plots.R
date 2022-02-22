@@ -1,8 +1,13 @@
 
+
+if (!require("archive")) devtools::install_github("jimhester/archive")
+if (!require("inborutils")) devtools::install_github("inbo/inborutils")
 if (!require("OpenStreetMap")) install.packages("OpenStreetMap")
 if (!require("pacman")) install.packages("pacman")
+
 pacman::p_load(tidyverse,ggmap,ggplot2,rgdal,rgeos,maptools,tmap,sf,
-               rworldmap, elevatr,units,maps, gganimate)
+               rworldmap, elevatr,units,maps, gganimate,assertthat,
+               inborutils, curl, archive, readr, vroom)
 
 shp_fire_2000_2009 <- read_sf(paste0("./data/fire_data/WFDSSHistoricFirePerimeters_2000_2009.shp"))%>%
   st_transform(., crs = 4326)
