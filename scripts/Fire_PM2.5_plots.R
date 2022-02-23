@@ -7,7 +7,7 @@ if (!require("pacman")) install.packages("pacman")
 
 pacman::p_load(tidyverse,ggmap,ggplot2,rgdal,rgeos,maptools,tmap,sf,
                rworldmap, elevatr,units,maps, gganimate,assertthat,
-               inborutils, curl, archive, readr, vroom)
+               inborutils, curl, archive, readr, vroom, rhdf5)
 
 shp_fire_2000_2009 <- read_sf(paste0("./data/fire_data/WFDSSHistoricFirePerimeters_2000_2009.shp"))%>%
   st_transform(., crs = 4326)
@@ -21,11 +21,19 @@ shp_fire <- bind_rows(shp_fire_2000_2009, shp_fire_2010_2019, shp_fire_2020) %>%
   mutate(Date = lubridate::ymd(DATE_CUR),
          YEAR = lubridate:: year(Date),
          Month = lubridate::month(Date)) %>%
-  filter(grepl('CA|OR|WA', UNIT_ID))%>%
-  filter(!grepl('AZ|NM|WY|AL|FL|ID|IL|NV|LA|NC|CO', UNIT_ID))%>%
+  filter(grepl('CA|OR|WA|CO|NM|NV|ID|AZ|MT|WY|UT', UNIT_ID))%>%
+  filter(!grepl('AL|FL|IL|LA|NC|NY|ME|MI|WV|NH|NJ|VT|GA|NC|SC|NE|IA|ND|SD|MO|AK', UNIT_ID))%>%
   mutate(STATE = ifelse(grepl("CA", UNIT_ID),"California",UNIT_ID),
          STATE = ifelse(grepl("OR", STATE),"Oregon",STATE),
-         STATE = ifelse(grepl("WA", STATE),"Washington",STATE))
+         STATE = ifelse(grepl("WA", STATE),"Washington",STATE),
+         STATE = ifelse(grepl("CO", UNIT_ID),"Colorado",UNIT_ID),
+         STATE = ifelse(grepl("NM", STATE),"New Mexico",STATE),
+         STATE = ifelse(grepl("NV", STATE),"Nevada",STATE),
+         STATE = ifelse(grepl("ID", UNIT_ID),"Idaho",UNIT_ID),
+         STATE = ifelse(grepl("AZ", STATE),"Arizona",STATE),
+         STATE = ifelse(grepl("MT", STATE),"Montana",STATE),
+         STATE = ifelse(grepl("WY", UNIT_ID),"Wyoming",UNIT_ID),
+         STATE = ifelse(grepl("UT", STATE),"Utah",STATE))
 
 shp_fire <- st_make_valid(shp_fire)
 
@@ -35,17 +43,20 @@ laea = st_crs("+proj=laea +lat_0=30 +lon_0=-95")
 usa <- st_transform(usa, laea)
 
 us_geo <- tigris::states(class = "sf", cb = TRUE)%>%
-  filter(STUSPS %in% c("CA","OR","WA"))
+  filter(STUSPS %in% c("CA","OR","WA",
+                       "CO","NM","NV",
+                       "MT","AZ","ID",
+                       "WY","UT"))
 
 terrain_map <- openmap(upperLeft = c(50, -125),
-                       lowerRight = c(23, -113),
+                       lowerRight = c(23, -100),
                        type = 'nps', zoom=7)
 
 #Concentration of PM2.5 higher than 20 μg*m−3 in fire prone areas is associated
 #with wildfire smoke plumes, while concentrations 35 μg*m−3 or higher reflect
 #dense smoke conditions --> Scordo et al., 2021
 
-d <- list.files(path = "/Users/ryanmcclure/Documents/smoked_lakes/data/smoke_data/",
+d <- list.files(path = "/Users/ryanmcclure/Documents/Lake_smoke_study/data/smoke_data/",
                 pattern = "*.csv", full.names = TRUE) %>%
   lapply(read_csv) %>%
   do.call(rbind.data.frame, .) %>%
@@ -57,13 +68,28 @@ d <- list.files(path = "/Users/ryanmcclure/Documents/smoked_lakes/data/smoke_dat
          SITE_LATITUDE = as.numeric(SITE_LATITUDE),
          SITE_LONGITUDE = as.numeric(SITE_LONGITUDE),
          smoky = 30)%>%
-  group_by(Month, Year, `Site ID`, SITE_LATITUDE, SITE_LONGITUDE, smoky, UNITS) %>%
+  group_by(`Site ID`, SITE_LATITUDE, SITE_LONGITUDE, smoky, UNITS) %>%
   summarize(max_PM25 = max(`Daily Mean PM2.5 Concentration`),
+            median_PM25 = median(`Daily Mean PM2.5 Concentration`),
+            mean_PM25 = mean(`Daily Mean PM2.5 Concentration`),
             sd_PM25 = sd(`Daily Mean PM2.5 Concentration`)) %>%
-  mutate(smoky_site = ifelse(max_PM25 > smoky, 1, 0)) %>%
-  filter(smoky_site == 1)%>%
-  st_as_sf(coords = c("SITE_LONGITUDE", "SITE_LATITUDE"), crs = 4326)%>%
-  filter(Year > 1999)
+  # mutate(smoky_site = ifelse(max_PM25 > smoky, 1, 0)) %>%
+  # filter(smoky_site == 1)%>%
+  st_as_sf(coords = c("SITE_LONGITUDE", "SITE_LATITUDE"), crs = 4326)
+
+OSM_map <- OpenStreetMap::autoplot.OpenStreetMap(terrain_map) +
+  geom_sf(data = st_transform(x = us_geo, crs = 3857),
+          aes(geometry = geometry, alpha = 0.3),  inherit.aes = F)+
+  geom_sf(data = shp_fire, aes(geometry = geometry), cex = 0.2, color = "darkorange", inherit.aes = F) +
+  geom_sf(data = d, aes(geometry = geometry, bg = sd_PM25, size = max_PM25), alpha = 0.4, pch = 21, inherit.aes = F) +
+  labs(caption = "\U00a9 OpenStreetMap contributors") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  #labs(title = paste0("Year: ",years[i],"Month: ",months[s]," mean PM2.5 exceeding 20 ug/m3 "))+
+  theme_bw() +
+  theme(legend.position = "none",
+        title = element_text(size = 6))
+
 
 years <- c(2000, 2001, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
            2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020)

@@ -12,11 +12,13 @@ d2 <- list.files(path = "/Users/ryanmcclure/Documents/Lake_smoke_study/data/smok
          SITE_LATITUDE = as.numeric(SITE_LATITUDE),
          SITE_LONGITUDE = as.numeric(SITE_LONGITUDE),
          smoky = 30) %>%
-  group_by(Year, STATE, UNITS) %>%
+  group_by(Date, Month, Year, STATE, UNITS) %>%
   summarize(max_PM25 = max(`Daily Mean PM2.5 Concentration`),
+            median_PM25 = median(`Daily Mean PM2.5 Concentration`),
+            mean_PM25 = mean(`Daily Mean PM2.5 Concentration`),
             sd_PM25 = sd(`Daily Mean PM2.5 Concentration`))
 
-ggplot(d2, aes(Year, max_PM25, color = STATE, group = STATE))+
+ggplot(d2, aes(Year, mean_PM25, color = STATE, group = STATE))+
   geom_point(size = 4)+
   geom_smooth(aes(fill = STATE), alpha = 0.3,method="auto", se=TRUE, fullrange=FALSE, level=0.95)
 
@@ -37,11 +39,11 @@ d3 <- list.files(path = "/Users/ryanmcclure/Documents/Lake_smoke_study/data/smok
   summarize(max_PM25 = max(`Daily Mean PM2.5 Concentration`),
             sd_PM25 = sd(`Daily Mean PM2.5 Concentration`))
 
-ggplot(d3, aes(Month, max_PM25, group = Year))+
+ggplot(d2, aes(Year, mean_PM25, color = Month))+
   geom_line(size = 0.5)+
   theme_bw()+
-  facet_wrap(~STATE)+
-  transition_reveal(Year)
+  facet_wrap(~STATE, scales = "free_y")
+  #transition_reveal(Year)
 
 joined_sf <- d %>%
   cbind(shp_fire[st_nearest_feature(d, shp_fire),])
