@@ -56,7 +56,7 @@ d <- list.files(path = "/Users/ryanmcclure/Documents/smoked_lakes/data/smoke_dat
          `Site ID` = as.numeric(`Site ID`),
          SITE_LATITUDE = as.numeric(SITE_LATITUDE),
          SITE_LONGITUDE = as.numeric(SITE_LONGITUDE),
-         smoky = 35)%>%
+         smoky = 30)%>%
   group_by(Month, Year, `Site ID`, SITE_LATITUDE, SITE_LONGITUDE, smoky, UNITS) %>%
   summarize(max_PM25 = max(`Daily Mean PM2.5 Concentration`),
             sd_PM25 = sd(`Daily Mean PM2.5 Concentration`)) %>%

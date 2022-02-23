@@ -1,6 +1,6 @@
 
 
-d2 <- list.files(path = "/Users/ryanmcclure/Documents/smoked_lakes/data/smoke_data/",
+d2 <- list.files(path = "/Users/ryanmcclure/Documents/Lake_smoke_study/data/smoke_data/",
                 pattern = "*.csv", full.names = TRUE) %>%
   lapply(read_csv) %>%
   do.call(rbind.data.frame, .) %>%
@@ -11,7 +11,7 @@ d2 <- list.files(path = "/Users/ryanmcclure/Documents/smoked_lakes/data/smoke_da
          `Site ID` = as.numeric(`Site ID`),
          SITE_LATITUDE = as.numeric(SITE_LATITUDE),
          SITE_LONGITUDE = as.numeric(SITE_LONGITUDE),
-         smoky = 35) %>%
+         smoky = 30) %>%
   group_by(Year, STATE, UNITS) %>%
   summarize(max_PM25 = max(`Daily Mean PM2.5 Concentration`),
             sd_PM25 = sd(`Daily Mean PM2.5 Concentration`))
@@ -21,7 +21,7 @@ ggplot(d2, aes(Year, max_PM25, color = STATE, group = STATE))+
   geom_smooth(aes(fill = STATE), alpha = 0.3,method="auto", se=TRUE, fullrange=FALSE, level=0.95)
 
 
-d3 <- list.files(path = "/Users/ryanmcclure/Documents/smoked_lakes/data/smoke_data/",
+d3 <- list.files(path = "/Users/ryanmcclure/Documents/Lake_smoke_study/data/smoke_data/",
                  pattern = "*.csv", full.names = TRUE) %>%
   lapply(read_csv) %>%
   do.call(rbind.data.frame, .) %>%

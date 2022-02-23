@@ -4,7 +4,8 @@
 
 # Session Data files
 .RData
-./data/fire_data
+./data/fire_data/
+./data/smoke_data/
 
 # User-specific files
 .Ruserdata
